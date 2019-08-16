@@ -1,7 +1,7 @@
 #!/bin/bash
 
 version="2016.6.27"
-pidgin_version="2.11.0"
+pidgin_version="2.13.0"
 devroot="$1"
 path="$2"
 
@@ -100,7 +100,7 @@ download() {
     file="$1/$filename"
     mkdir -p "$1"
     [[ -f "$file" && ! -s "$file" ]] && rm "$file"
-    [[ ! -e "$file" ]] && { wget --no-check-certificate --quiet --output-document "$file" "$2" || oops "failed downloading from ${2}"; }
+    [[ ! -e "$file" ]] && { wget --output-document "$file" "$2" || oops "failed downloading from ${2}"; }
 }
 
 extract() {
@@ -114,6 +114,7 @@ extract() {
     case "$format" in
         bsdtar)  bsdtar -xzf          "$compressed"  --directory "$directory" ;;
         lzma)    tar --lzma -xf       "$compressed"  --directory "$directory" ;;
+        xz)      tar -xJf             "$compressed"  --directory "$directory" ;;
         bzip2)   tar -xjf             "$compressed"  --directory "$directory" "${files[@]}" ;;
         gzip)    tar -xzf             "$compressed"  --directory "$directory" ;;
         zip)     unzip -qo${files:+j} "$compressed" "${files[@]}" -d "$directory" ;;
@@ -141,42 +142,42 @@ fi
 
 # Install what is possible with package manager
 step "Installing the necessary packages"
-if [[ "${system}" = Cygwin ]]; then
-    if ! available apt-cyg; then
-        info 'Installing' 'apt-cyg'
-        lynx -source 'https://github.com/transcode-open/apt-cyg/raw/master/apt-cyg' > /usr/local/bin/apt-cyg
-        chmod +x /usr/local/bin/apt-cyg
-    fi
-    install 'bsdtar'
-    install 'ca-certificates'
-    install 'gnupg'
-    install 'libiconv'
-    install 'make'
-    install 'patch'
-    install 'unzip'
-    install 'wget'
-    install 'zip'
-else
-    if available mingw-get; then
-        install 'mingw32-bzip2'
-        install 'mingw32-libiconv'
-        install 'msys-bsdtar'
-        install 'msys-coreutils'
-        install 'msys-libopenssl'
-        install 'msys-make'
-        install 'msys-patch'
-        install 'msys-unzip'
-        install 'msys-wget'
-        install 'msys-zip'
-    else
-        warn 'could not find mingw-get in system path'
-    fi
-fi
-echo
+#if [[ "${system}" = Cygwin ]]; then
+#    if ! available apt-cyg; then
+#        info 'Installing' 'apt-cyg'
+#        lynx -source 'https://github.com/transcode-open/apt-cyg/raw/master/apt-cyg' > /usr/local/bin/apt-cyg
+#        chmod +x /usr/local/bin/apt-cyg
+#    fi
+#    install 'bsdtar'
+#    install 'ca-certificates'
+#    install 'gnupg'
+#    install 'libiconv'
+#    install 'make'
+#    install 'patch'
+#    install 'unzip'
+#    install 'wget'
+#    install 'zip'
+#else
+#    if available mingw-get; then
+#        install 'mingw32-bzip2'
+#        install 'mingw32-libiconv'
+#        install 'msys-bsdtar'
+#        install 'msys-coreutils'
+#        install 'msys-libopenssl'
+#        install 'msys-make'
+#        install 'msys-patch'
+#        install 'msys-unzip'
+#        install 'msys-wget'
+#        install 'msys-zip'
+#    else
+#        warn 'could not find mingw-get in system path'
+#    fi
+#fi
+#echo
 
 # Download GCC
 step "Downloading specific MinGW GCC"
-download "${cache}/${mingw}" "${mingw_base_url}/binutils/binutils-2.23.1/binutils-2.23.1-1-mingw32-bin.tar.lzma/download"
+download "${cache}/${mingw}" "${mingw_base_url}/binutils/binutils-2.24/binutils-2.24-1-mingw32-bin.tar.xz/download"
 download "${cache}/${mingw}" "${mingw_base_url}/gcc/Version4/gcc-4.7.2-1/gcc-core-4.7.2-1-mingw32-bin.tar.lzma/download"
 download "${cache}/${mingw}" "${mingw_base_url}/gcc/Version4/gcc-4.7.2-1/${gcc_source}.tar.lzma/download"
 download "${cache}/${mingw}" "${mingw_base_url}/gcc/Version4/gcc-4.7.2-1/libgcc-4.7.2-1-mingw32-dll-1.tar.lzma/download"
@@ -230,6 +231,9 @@ echo
 step "Extracting MinGW GCC"
 for tarball in "${cache}/${mingw}/"*".tar.lzma"; do
     extract lzma "${win32}/${mingw}" "$tarball"
+done
+for tarball in "${cache}/${mingw}/"*".tar.xz"; do
+    extract xz "${win32}/${mingw}" "$tarball"
 done
 echo
 
